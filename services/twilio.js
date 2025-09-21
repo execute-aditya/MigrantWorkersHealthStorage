@@ -55,6 +55,13 @@ const sendMessage = async (to, body) => {
       moreInfo: error.moreInfo
     };
     console.error('Twilio SMS error:', err);
+    
+    // In development, for unverified numbers, return success but log the error
+    if (process.env.NODE_ENV === 'development' && error.code === 21608) {
+      console.log('Twilio not configured or SMS failed; proceeding in development mode and exposing OTP in response.');
+      return { success: true, messageSid: 'DEV_MODE', developmentMode: true };
+    }
+    
     return { success: false, error: err };
   }
 };

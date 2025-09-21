@@ -58,7 +58,18 @@ router.post('/send-otp-registration', [
     
     if (!smsResult.success) {
       console.error('Failed to send SMS:', smsResult.error);
-      // Remove from temp storage if SMS fails
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Twilio not configured or SMS failed; proceeding in development mode and exposing OTP in response.');
+        console.log(`DEV ONLY - Registration OTP for ${mobileNumber}: ${otp}`);
+        return res.json({
+          message: 'OTP generated (DEV MODE - SMS not sent)',
+          mobileNumber,
+          expiresIn: '10 minutes',
+          code: 'OTP_SENT_DEV',
+          devOTP: otp
+        });
+      }
+      // Remove from temp storage if SMS fails in non-dev environments
       tempRegistrations.delete(mobileNumber);
       return res.status(500).json({ 
         message: 'Failed to send OTP. Please try again.' 
@@ -220,6 +231,19 @@ router.post('/send-otp-login', [
     
     if (!smsResult.success) {
       console.error('Failed to send login SMS:', smsResult.error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Twilio not configured or SMS failed; proceeding in development mode and exposing OTP in response.');
+        const maskedMobileDev = user.mobileNumber.replace(/(\d{3})(\d{5})(\d{2})/, '$1*****$3');
+        console.log(`DEV ONLY - Login OTP for ${user.mobileNumber}: ${otp}`);
+        return res.json({
+          message: 'OTP generated (DEV MODE - SMS not sent)',
+          mobileNumber: maskedMobileDev,
+          fullName: user.fullName,
+          expiresIn: '10 minutes',
+          code: 'OTP_SENT_DEV',
+          devOTP: otp,
+        });
+      }
       return res.status(500).json({ 
         message: 'Failed to send OTP. Please try again.',
         code: 'SMS_SEND_FAILED',
@@ -287,7 +311,11 @@ router.post('/verify-otp-login', [
     }
 
     // Verify OTP
-    if (!user.verifyOTP(otp)) {
+    const otpValid = user.verifyOTP(otp);
+    if (!otpValid) {
+      // Save the user with updated OTP attempts first
+      await user.save();
+      // Then increment login attempts (this uses updateOne, not save)
       await user.incLoginAttempts();
       
       // Get remaining attempts
@@ -300,10 +328,10 @@ router.post('/verify-otp-login', [
       });
     }
 
-    // Reset login attempts on successful login
+    // Reset login attempts and update last login (these use updateOne, not save)
     await user.resetLoginAttempts();
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login directly in database
+    await user.updateOne({ lastLogin: new Date() });
 
     // Generate JWT token with more user info
     const token = jwt.sign(

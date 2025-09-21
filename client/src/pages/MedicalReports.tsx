@@ -40,7 +40,7 @@ import {
   Description,
   Upload,
 } from '@mui/icons-material';
-import { MedicalReport } from '../types';
+import { MedicalReport, HealthRecord } from '../types';
 import apiService from '../services/api';
 
 const MedicalReportsPage: React.FC = () => {
@@ -52,9 +52,35 @@ const MedicalReportsPage: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pages: 1, total: 0 });
+  
+  // Upload dialog states
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+  const [uploadFormData, setUploadFormData] = useState({
+    healthRecordId: '',
+    reportType: '',
+    reportName: '',
+    reportDate: new Date().toISOString().split('T')[0],
+    reportDetails: {
+      findings: '',
+      conclusion: '',
+      recommendations: '',
+      normalRange: '',
+      actualValue: ''
+    },
+    labInfo: {
+      name: '',
+      address: '',
+      contactNumber: '',
+      doctorName: ''
+    }
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchReports();
+    fetchHealthRecords();
   }, []);
 
   const fetchReports = async (page = 1, limit = 10) => {
@@ -89,6 +115,119 @@ const MedicalReportsPage: React.FC = () => {
       setError(err.response?.data?.message || 'Search failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHealthRecords = async () => {
+    try {
+      const data = await apiService.getHealthRecords({ limit: 100 });
+      setHealthRecords(data.records);
+    } catch (err: any) {
+      console.error('Failed to load health records:', err);
+    }
+  };
+
+  const handleOpenUploadDialog = () => {
+    setUploadDialogOpen(true);
+    setError('');
+  };
+
+  const handleCloseUploadDialog = () => {
+    setUploadDialogOpen(false);
+    setSelectedFile(null);
+    setUploadFormData({
+      healthRecordId: '',
+      reportType: '',
+      reportName: '',
+      reportDate: new Date().toISOString().split('T')[0],
+      reportDetails: {
+        findings: '',
+        conclusion: '',
+        recommendations: '',
+        normalRange: '',
+        actualValue: ''
+      },
+      labInfo: {
+        name: '',
+        address: '',
+        contactNumber: '',
+        doctorName: ''
+      }
+    });
+  };
+
+  const handleUploadFormChange = (field: string, value: any) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setUploadFormData((prev) => {
+        const parentObj = (prev as any)[parent] ?? {};
+        return {
+          ...prev,
+          [parent]: {
+            ...(parentObj as Record<string, any>),
+            [child]: value,
+          },
+        };
+      });
+    } else {
+      setUploadFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedFile(file);
+  };
+
+  const handleUploadReport = async () => {
+    try {
+      setUploadLoading(true);
+      setError('');
+
+      if (!uploadFormData.healthRecordId) {
+        setError('Please select a health record');
+        return;
+      }
+      if (!uploadFormData.reportType) {
+        setError('Please select a report type');
+        return;
+      }
+      if (!uploadFormData.reportName) {
+        setError('Please enter a report name');
+        return;
+      }
+      if (!selectedFile) {
+        setError('Please select a file to upload');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('healthRecordId', uploadFormData.healthRecordId);
+      formData.append('reportType', uploadFormData.reportType);
+      formData.append('reportName', uploadFormData.reportName);
+      formData.append('reportDate', uploadFormData.reportDate);
+      formData.append('reportFile', selectedFile);
+
+      // Add nested objects as JSON strings
+      if (uploadFormData.reportDetails.findings || uploadFormData.reportDetails.conclusion || uploadFormData.reportDetails.recommendations) {
+        formData.append('reportDetails', JSON.stringify(uploadFormData.reportDetails));
+      }
+      if (uploadFormData.labInfo.name) {
+        formData.append('labInfo', JSON.stringify(uploadFormData.labInfo));
+      }
+
+      const result = await apiService.createMedicalReport(formData);
+      
+      // Refresh the reports list
+      fetchReports();
+      handleCloseUploadDialog();
+      
+      // Show success message
+      setError('');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to upload medical report');
+    } finally {
+      setUploadLoading(false);
     }
   };
 
@@ -163,7 +302,7 @@ const MedicalReportsPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Upload />}
-          onClick={() => {/* Navigate to upload report */}}
+          onClick={handleOpenUploadDialog}
         >
           Upload Report
         </Button>
@@ -319,7 +458,7 @@ const MedicalReportsPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Upload />}
-            onClick={() => {/* Navigate to upload report */}}
+            onClick={handleOpenUploadDialog}
           >
             Upload Report
           </Button>
@@ -496,12 +635,217 @@ const MedicalReportsPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Upload Report Dialog */}
+      <Dialog open={uploadDialogOpen} onClose={handleCloseUploadDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Upload Medical Report</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+            {/* Health Record Selection */}
+            <FormControl fullWidth required>
+              <InputLabel>Health Record</InputLabel>
+              <Select
+                value={uploadFormData.healthRecordId}
+                label="Health Record"
+                onChange={(e) => handleUploadFormChange('healthRecordId', e.target.value)}
+              >
+                {healthRecords.map((record) => (
+                  <MenuItem key={record.id} value={record.id}>
+                    {record.checkupType} - {record.checkupDate ? new Date(record.checkupDate).toLocaleDateString() : 'N/A'}
+                    {record.doctor?.name && ` (Dr. ${record.doctor.name})`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Report Type and Name */}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth required>
+                  <InputLabel>Report Type</InputLabel>
+                  <Select
+                    value={uploadFormData.reportType}
+                    label="Report Type"
+                    onChange={(e) => handleUploadFormChange('reportType', e.target.value)}
+                  >
+                    <MenuItem value="Blood Test">Blood Test</MenuItem>
+                    <MenuItem value="X-Ray">X-Ray</MenuItem>
+                    <MenuItem value="CT Scan">CT Scan</MenuItem>
+                    <MenuItem value="MRI">MRI</MenuItem>
+                    <MenuItem value="ECG">ECG</MenuItem>
+                    <MenuItem value="Ultrasound">Ultrasound</MenuItem>
+                    <MenuItem value="Pathology">Pathology</MenuItem>
+                    <MenuItem value="Microbiology">Microbiology</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Report Name"
+                  value={uploadFormData.reportName}
+                  onChange={(e) => handleUploadFormChange('reportName', e.target.value)}
+                  placeholder="e.g., Complete Blood Count, Chest X-Ray"
+                />
+              </Grid>
+            </Grid>
+
+            {/* Report Date */}
+            <TextField
+              fullWidth
+              required
+              label="Report Date"
+              type="date"
+              value={uploadFormData.reportDate}
+              onChange={(e) => handleUploadFormChange('reportDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            {/* File Upload */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Upload Report File *
+              </Typography>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<Upload />}
+                fullWidth
+                sx={{ height: 56, textTransform: 'none' }}
+              >
+                {selectedFile ? selectedFile.name : 'Choose File (PDF, Image, or Document)'}
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleFileChange}
+                />
+              </Button>
+              {selectedFile && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  File size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </Typography>
+              )}
+            </Box>
+
+            {/* Report Details (Optional) */}
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Report Details (Optional)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={2}
+                    label="Findings"
+                    value={uploadFormData.reportDetails.findings}
+                    onChange={(e) => handleUploadFormChange('reportDetails.findings', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={2}
+                    label="Conclusion"
+                    value={uploadFormData.reportDetails.conclusion}
+                    onChange={(e) => handleUploadFormChange('reportDetails.conclusion', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={2}
+                    label="Recommendations"
+                    value={uploadFormData.reportDetails.recommendations}
+                    onChange={(e) => handleUploadFormChange('reportDetails.recommendations', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Normal Range"
+                    value={uploadFormData.reportDetails.normalRange}
+                    onChange={(e) => handleUploadFormChange('reportDetails.normalRange', e.target.value)}
+                    placeholder="e.g., 4.5-11.0 x10³/μL"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Actual Value"
+                    value={uploadFormData.reportDetails.actualValue}
+                    onChange={(e) => handleUploadFormChange('reportDetails.actualValue', e.target.value)}
+                    placeholder="e.g., 8.5 x10³/μL"
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* Lab Information (Optional) */}
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Lab Information (Optional)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Lab Name"
+                    value={uploadFormData.labInfo.name}
+                    onChange={(e) => handleUploadFormChange('labInfo.name', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Contact Number"
+                    value={uploadFormData.labInfo.contactNumber}
+                    onChange={(e) => handleUploadFormChange('labInfo.contactNumber', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Lab Address"
+                    value={uploadFormData.labInfo.address}
+                    onChange={(e) => handleUploadFormChange('labInfo.address', e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Doctor Name"
+                    value={uploadFormData.labInfo.doctorName}
+                    onChange={(e) => handleUploadFormChange('labInfo.doctorName', e.target.value)}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseUploadDialog}>Cancel</Button>
+          <Button 
+            onClick={handleUploadReport} 
+            variant="contained"
+            disabled={uploadLoading}
+          >
+            {uploadLoading ? <CircularProgress size={20} /> : 'Upload Report'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Floating Action Button */}
       <Fab
         color="primary"
         aria-label="add"
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => {/* Navigate to upload report */}}
+        onClick={handleOpenUploadDialog}
       >
         <Upload />
       </Fab>

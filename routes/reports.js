@@ -138,8 +138,8 @@ router.post('/', auth, upload.single('reportFile'), [
     const medicalReport = new MedicalReport(reportData);
     await medicalReport.save();
 
-    await medicalReport.populate('userId', 'firstName lastName mobileNumber')
-      .populate('healthRecordId', 'checkupDate checkupType doctor');
+    await medicalReport.populate('userId', 'firstName lastName mobileNumber');
+    await medicalReport.populate('healthRecordId', 'checkupDate checkupType doctor');
 
     res.status(201).json({
       message: 'Medical report created successfully',
@@ -184,8 +184,8 @@ router.put('/:id', auth, [
     });
 
     await report.save();
-    await report.populate('userId', 'firstName lastName mobileNumber')
-      .populate('healthRecordId', 'checkupDate checkupType doctor');
+    await report.populate('userId', 'firstName lastName mobileNumber');
+    await report.populate('healthRecordId', 'checkupDate checkupType doctor');
 
     res.json({
       message: 'Medical report updated successfully',

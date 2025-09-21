@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -15,10 +15,6 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Fab,
   FormControl,
@@ -46,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { HealthRecord } from '../types';
 import apiService from '../services/api';
+import AddHealthRecordDialog from '../components/AddHealthRecordDialog';
 
 const HealthRecordsPage: React.FC = () => {
   const [records, setRecords] = useState<HealthRecord[]>([]);
@@ -55,13 +52,10 @@ const HealthRecordsPage: React.FC = () => {
   const [filterType, setFilterType] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<HealthRecord | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pages: 1, total: 0 });
 
-  useEffect(() => {
-    fetchRecords();
-  }, []);
-
-  const fetchRecords = async (page = 1, limit = 10) => {
+  const fetchRecords = useCallback(async (page = 1, limit = 10) => {
     try {
       setLoading(true);
       const data = await apiService.getHealthRecords({
@@ -76,7 +70,11 @@ const HealthRecordsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   const handleSearch = async () => {
     try {
@@ -115,6 +113,11 @@ const HealthRecordsPage: React.FC = () => {
         setError(err.response?.data?.message || 'Failed to delete health record');
       }
     }
+  };
+
+  const handleRecordAdded = (newRecord: HealthRecord) => {
+    setRecords(prev => [newRecord, ...prev]);
+    setAddDialogOpen(false);
   };
 
   const getCheckupTypeColor = (type: string) => {
@@ -156,7 +159,7 @@ const HealthRecordsPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => {/* Navigate to add record */}}
+          onClick={() => setAddDialogOpen(true)}
         >
           Add Health Record
         </Button>
@@ -301,7 +304,7 @@ const HealthRecordsPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => {/* Navigate to add record */}}
+            onClick={() => setAddDialogOpen(true)}
           >
             Add Health Record
           </Button>
@@ -485,10 +488,17 @@ const HealthRecordsPage: React.FC = () => {
         color="primary"
         aria-label="add"
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => {/* Navigate to add record */}}
+        onClick={() => setAddDialogOpen(true)}
       >
         <Add />
       </Fab>
+
+      {/* Add Health Record Dialog */}
+      <AddHealthRecordDialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        onRecordAdded={handleRecordAdded}
+      />
     </Container>
   );
 };

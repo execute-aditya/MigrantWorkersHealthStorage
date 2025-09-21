@@ -186,14 +186,14 @@ userSchema.methods.verifyOTP = function(otp) {
   
   if (this.otp.code !== otp) {
     this.otp.attempts += 1;
-    this.save();
+    // Don't save here, let the caller handle it
     return false;
   }
   
   // OTP verified successfully
   this.otp = undefined;
   this.isVerified = true;
-  this.save();
+  // Don't save here, let the caller handle it
   return true;
 };
 

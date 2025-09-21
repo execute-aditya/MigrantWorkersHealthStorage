@@ -10,8 +10,15 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:3000',
+  'http://localhost:3001'
+];
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -94,8 +101,9 @@ const formData = {
   // ...add other fields as needed
 };
 
-const PORT = process.env.PORT || 5002;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT_ENV = process.env.PORT;
+const finalPort = process.env.PORT || 5001;
+app.listen(finalPort, () => {
+  console.log(`Server running on port ${finalPort}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
