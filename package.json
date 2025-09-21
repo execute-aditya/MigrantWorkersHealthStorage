@@ -1,0 +1,45 @@
+{
+  "name": "migrant-health-storage",
+  "version": "1.0.0",
+  "description": "Migrant Health Storage System for Kerala State",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "heroku-postbuild": "cd client && npm install && npm run build"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "mongodb": "^6.20.0",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.4",
+    "pdfkit": "^0.13.0",
+    "qrcode": "^1.5.3",
+    "twilio": "^4.15.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "keywords": [
+    "health",
+    "migrant",
+    "kerala",
+    "healthcare",
+    "digital"
+  ],
+  "author": "Kerala Health Department",
+  "license": "MIT"
+}

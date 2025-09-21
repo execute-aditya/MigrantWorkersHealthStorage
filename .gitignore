@@ -1,0 +1,83 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+.cache/
+coverage/
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Node/JS
+node_modules/
+dist/
+build/
+.npmrc
+.pnpm-store/
+.turbo/
+.next/
+.parcel-cache/
+web_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# Java/Gradle
+*.class
+*.jar
+*.war
+*.ear
+.gradle/
+build/
+
+# Go
+bin/
+
+# Rust
+/target/
+
+# Ruby
+.bundle/
+/vendor/bundle/
+
+# PHP/Composer
+vendor/
+composer.lock
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Serverless
+.serverless/
+
+# IDE/Editor
+.idea/
+.vscode/
+*.iml
+
+# OS files
+Icon?
+
+# Misc
+*.bak
+~$*
