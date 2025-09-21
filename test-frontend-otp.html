@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Test - Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .form-group { margin: 15px 0; }
+        input, button { padding: 10px; margin: 5px; font-size: 14px; }
+        .success { color: green; }
+        .error { color: red; }
+        .debug { background: #f5f5f5; padding: 10px; margin: 10px 0; border-left: 3px solid #007cba; }
+    </style>
+</head>
+<body>
+    <h1>OTP Login Test</h1>
+    <p>This page tests the OTP functionality directly without React.</p>
+    
+    <div class="form-group">
+        <label for="aadhaar">Aadhaar Number:</label>
+        <input type="text" id="aadhaar" placeholder="123456789012" value="123456789012" maxlength="12">
+        <button onclick="sendOTP()">Send OTP</button>
+    </div>
+    
+    <div class="form-group" id="otpSection" style="display: none;">
+        <label for="otp">Enter OTP:</label>
+        <input type="text" id="otp" placeholder="6-digit OTP" maxlength="6">
+        <button onclick="verifyOTP()">Verify OTP</button>
+    </div>
+    
+    <div id="messages"></div>
+    
+    <div class="debug">
+        <h3>Debug Information:</h3>
+        <div id="debugInfo"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let otpData = {};
+
+        function log(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const debugDiv = document.getElementById('debugInfo');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = type;
+            messageElement.textContent = `[${timestamp}] ${message}`;
+            messagesDiv.appendChild(messageElement);
+            
+            // Also add to debug info
+            debugDiv.innerHTML += `<div>[${timestamp}] ${type.toUpperCase()}: ${message}</div>`;
+        }
+
+        async function sendOTP() {
+            const aadhaar = document.getElementById('aadhaar').value;
+            
+            if (!aadhaar || aadhaar.length !== 12) {
+                log('Please enter a valid 12-digit Aadhaar number', 'error');
+                return;
+            }
+
+            log('Sending OTP request...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/send-otp-login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify({ aadhaarNumber: aadhaar })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ OTP sent successfully!', 'success');
+                    log(`📱 Mobile: ${data.mobileNumber}`, 'success');
+                    log(`👤 User: ${data.fullName}`, 'success');
+                    
+                    if (data.devOTP) {
+                        log(`🔢 DEV OTP: ${data.devOTP}`, 'success');
+                        document.getElementById('otp').value = data.devOTP;
+                    }
+                    
+                    otpData = { aadhaarNumber: aadhaar };
+                    document.getElementById('otpSection').style.display = 'block';
+                } else {
+                    log(`❌ Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = document.getElementById('otp').value;
+            
+            if (!otp || otp.length !== 6) {
+                log('Please enter a valid 6-digit OTP', 'error');
+                return;
+            }
+
+            log('Verifying OTP...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/verify-otp-login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify({ 
+                        aadhaarNumber: otpData.aadhaarNumber, 
+                        otp: otp 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ OTP verified successfully!', 'success');
+                    log(`🎉 Welcome ${data.user.fullName}!`, 'success');
+                    log('🔑 JWT Token generated', 'success');
+                } else {
+                    log(`❌ Verification failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Verification error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Test connection on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health-check`);
+                const data = await response.json();
+                log('✅ Backend connection successful', 'success');
+            } catch (error) {
+                log('❌ Backend connection failed', 'error');
+            }
+        };
+    </script>
+</body>
+</html>
