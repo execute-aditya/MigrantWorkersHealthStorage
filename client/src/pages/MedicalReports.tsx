@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -6,8 +6,6 @@ import {
   Box,
   Button,
   Grid,
-  Card,
-  CardContent,
   TextField,
   Alert,
   CircularProgress,
@@ -30,7 +28,6 @@ import {
   MenuItem,
 } from '@mui/material';
 import {
-  Add,
   Edit,
   Delete,
   Visibility,
@@ -78,12 +75,7 @@ const MedicalReportsPage: React.FC = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    fetchReports();
-    fetchHealthRecords();
-  }, []);
-
-  const fetchReports = async (page = 1, limit = 10) => {
+  const fetchReports = useCallback(async (page = 1, limit = 10) => {
     try {
       setLoading(true);
       const data = await apiService.getMedicalReports({
@@ -98,7 +90,12 @@ const MedicalReportsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType]);
+
+  useEffect(() => {
+    fetchReports();
+    fetchHealthRecords();
+  }, [fetchReports]);
 
   const handleSearch = async () => {
     try {
@@ -216,7 +213,7 @@ const MedicalReportsPage: React.FC = () => {
         formData.append('labInfo', JSON.stringify(uploadFormData.labInfo));
       }
 
-      const result = await apiService.createMedicalReport(formData);
+      await apiService.createMedicalReport(formData);
       
       // Refresh the reports list
       fetchReports();

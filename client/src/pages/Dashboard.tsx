@@ -6,7 +6,6 @@ import {
   Box,
   Card,
   CardContent,
-  CardActions,
   Button,
   Chip,
   List,
@@ -26,7 +25,6 @@ import {
   Schedule,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 
 interface DashboardData {
@@ -57,7 +55,6 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();

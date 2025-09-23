@@ -5,8 +5,6 @@ import {
   Typography,
   Box,
   Button,
-  Card,
-  CardContent,
   TextField,
   Alert,
   CircularProgress,
@@ -27,7 +25,6 @@ import {
   Share,
   Refresh,
   Visibility,
-  VisibilityOff,
 } from '@mui/icons-material';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../contexts/AuthContext';

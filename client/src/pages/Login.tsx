@@ -71,7 +71,7 @@ const Login: React.FC = () => {
         return;
       }
 
-      const response = await apiService.sendOTPLogin(aadhaarNumber);
+      await apiService.sendOTPLogin(aadhaarNumber);
       setSuccess('OTP sent successfully to your registered mobile number');
       setOtpSent(true);
       setOtpData({ aadhaarNumber });

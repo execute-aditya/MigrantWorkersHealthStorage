@@ -13,7 +13,6 @@ import QRCode from './pages/QRCode';
 import Profile from './pages/Profile';
 import HealthCard from './pages/HealthCard';
 import Layout from './components/Layout';
-const mongoose = require('mongoose');
 
 const theme = createTheme({
   palette: {

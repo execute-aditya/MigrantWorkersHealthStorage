@@ -8,33 +8,20 @@ import {
   TextField,
   Alert,
   CircularProgress,
-  Card,
-  CardContent,
-  Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Grid,
 } from '@mui/material';
 import {
   Person,
   Phone,
-  Email,
-  LocationOn,
-  Bloodtype,
-  Work,
   Edit,
   Save,
   Cancel,
   HealthAndSafety,
-  Description,
-  QrCode,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { BloodGroup } from '../types';
