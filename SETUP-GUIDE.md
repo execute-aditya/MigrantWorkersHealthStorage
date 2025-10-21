@@ -130,7 +130,7 @@ nano .env
 **Required Environment Variables:**
 ```env
 # Database Configuration
-MONGODB_URI=mongodb+srv://em4017077_db_user:eG51jHgNT0xj5mmd@migranthealth.dfm4djc.mongodb.net/MigrantHealthDB?retryWrites=true&w=majority&appName=migranthealth
+MONGODB_URI=mongodb://[username:password@]host1[:port1][,host2[:port2],...]/[database][?options]
 
 # JWT Secret (generate a new one for security)
 JWT_SECRET=your_super_secret_jwt_key_here_change_this
